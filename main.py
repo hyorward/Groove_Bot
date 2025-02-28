@@ -36,6 +36,7 @@ async def on_ready():
     print(f'Бот запущен')
     check_prayer_times.start()
 
+AUDIO_FOLDER = 'Sounds'
 
 @bot.event
 async def on_voice_state_update(member, before, after):
@@ -47,7 +48,8 @@ async def on_voice_state_update(member, before, after):
         audio_files = ['mephala.mp3', 'bratishka.mp3']  # Список аудиофайлов
         random_audio = random.choice(audio_files)  # Выбираем случайный файл
         vc = await voice_channel.connect()
-        vc.play(discord.FFmpegPCMAudio(random_audio))  # Воспроизведение случайного аудиофайла
+        audio_path = os.path.join(AUDIO_FOLDER, random_audio)
+        vc.play(discord.FFmpegPCMAudio(audio_path))  # Воспроизведение случайного аудиофайла
         
         while vc.is_playing():
             await asyncio.sleep(1)
@@ -69,10 +71,15 @@ async def check_prayer_times():
             if channel.type.value == ChannelType.voice.value:
                 if len(channel.members) > 0:
                     vc = await channel.connect()
-                    vc.play(discord.FFmpegPCMAudio('azan.mp3'))
+                    audio_path = os.path.join(AUDIO_FOLDER, 'azan.mp3')
+                    vc.play(discord.FFmpegPCMAudio(audio_path))
                     while vc.is_playing():
                         await asyncio.sleep(1)
                     await vc.disconnect()
+
+
+def get_audio_path(file_name):
+    return os.path.join(AUDIO_FOLDER, f'{file_name}.mp3')
 
 @bot.hybrid_command(name='chort', description='Who is chort?')
 @app_commands.describe(names='Names to choose from')
@@ -88,7 +95,8 @@ async def check_prayer_times():
 async def play_random(ctx, names: discord.app_commands.Choice[int]):
     voice_channel = ctx.author.voice.channel
     vc = await voice_channel.connect()
-    vc.play(discord.FFmpegPCMAudio(f'{names.value}.mp3'))
+    audio_path = get_audio_path(names.value)
+    vc.play(discord.FFmpegPCMAudio(audio_path))
     await ctx.send('Playing..')
     while vc.is_playing():
         await asyncio.sleep(1)
@@ -106,7 +114,8 @@ async def play_random(ctx, names: discord.app_commands.Choice[int]):
 async def play_random(ctx, names: discord.app_commands.Choice[int]):
     voice_channel = ctx.author.voice.channel
     vc = await voice_channel.connect()
-    vc.play(discord.FFmpegPCMAudio(f'{names.value}.mp3'))
+    audio_path = get_audio_path(names.value)
+    vc.play(discord.FFmpegPCMAudio(audio_path))
     await ctx.send('Playing...')
     while vc.is_playing():
         await asyncio.sleep(1)
@@ -146,7 +155,8 @@ async def play_random(ctx, names: discord.app_commands.Choice[int]):
 async def play_random(ctx, names: discord.app_commands.Choice[int]):
     voice_channel = ctx.author.voice.channel
     vc = await voice_channel.connect()
-    vc.play(discord.FFmpegPCMAudio(f'{names.value}.mp3'))
+    audio_path = get_audio_path(names.value)
+    vc.play(discord.FFmpegPCMAudio(audio_path))
     await ctx.send('Playing..')
     while vc.is_playing():
         await asyncio.sleep(1)
@@ -160,7 +170,8 @@ async def bless_random(ctx):
     vc = await voice_channel.connect()
     audio_files = ['blessyou', 'blessyou1']
     random_audio = random.choice(audio_files)
-    vc.play(discord.FFmpegPCMAudio(random_audio + '.mp3'))
+    audio_path = get_audio_path(random_audio)
+    vc.play(discord.FFmpegPCMAudio(audio_path))
     await ctx.send('Blessing..')
     while vc.is_playing():
         await asyncio.sleep(1)
@@ -172,7 +183,8 @@ async def bless_random(ctx):
 async def bless_random(ctx):
     voice_channel = ctx.author.voice.channel
     vc = await voice_channel.connect()
-    vc.play(discord.FFmpegPCMAudio(f'dobr.mp3'))
+    audio_path = get_audio_path('dobr')
+    vc.play(discord.FFmpegPCMAudio(audio_path))
     await ctx.send('Listening..')
     while vc.is_playing():
         await asyncio.sleep(1)
@@ -183,7 +195,8 @@ async def bless_random(ctx):
 async def podkol_kirk(ctx):
     voice_channel = ctx.author.voice.channel
     vc = await  voice_channel.connect()
-    vc.play(discord.FFmpegPCMAudio(f'podkol.mp3'))
+    audio_path = get_audio_path('podkol')
+    vc.play(discord.FFmpegPCMAudio(audio_path))
     await ctx.send('Listening to Kirkorov..')
     while vc.is_playing():
         await asyncio.sleep(1)
@@ -195,7 +208,8 @@ async def podkol_kirk(ctx):
 async def azan_islam(ctx):
     voice_channel = ctx.author.voice.channel
     vc = await voice_channel.connect()
-    vc.play(discord.FFmpegPCMAudio(f'azan.mp3'))
+    audio_path = get_audio_path('azan')
+    vc.play(discord.FFmpegPCMAudio(audio_path))
     await ctx.send('Listening..')
     while vc.is_playing():
         await asyncio.sleep(1)
