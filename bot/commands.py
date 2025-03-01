@@ -14,7 +14,7 @@ async def play_sound(ctx: Context, audio_name):
     voice_channel = ctx.author.voice.channel
     if bot_instance.user.id not in [member.id for member in voice_channel.members]:
         if ctx.guild.voice_client:
-            await ctx.send('Я УЖЕ В ДРУГОМ КАНАЛЕ СУЧКА')
+            await ctx.send('Я уже в другом канале!')
             return
         vc = await voice_channel.connect()
     else:
