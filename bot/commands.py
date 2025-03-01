@@ -3,21 +3,27 @@ import asyncio
 import discord
 from discord import app_commands
 from discord.app_commands import Choice
+from discord.ext.commands import Context
 
 from bot import config
 from bot.bot import bot_instance
 from bot.utils import get_audio_path
 
 
-async def play_sound(ctx, audio_name):
+async def play_sound(ctx: Context, audio_name):
     voice_channel = ctx.author.voice.channel
-    vc = await voice_channel.connect()
+    if bot_instance.user.id not in [member.id for member in voice_channel.members]:
+        if ctx.guild.voice_client:
+            await ctx.send('Я УЖЕ В ДРУГОМ КАНАЛЕ СУЧКА')
+            return
+        vc = await voice_channel.connect()
+    else:
+        vc = ctx.guild.voice_client
     audio_path = get_audio_path(audio_name)
     vc.play(discord.FFmpegPCMAudio(audio_path))
     await ctx.send('Playing..')
     while vc.is_playing():
         await asyncio.sleep(1)
-    await vc.disconnect()
     await ctx.send('Done')
 
 
@@ -54,3 +60,11 @@ async def play_soundpad(ctx, names: discord.app_commands.Choice[int]):
 @bot_instance.hybrid_command(name='azan', description='Listen to the azan')
 async def azan_islam(ctx):
     await play_sound(ctx, "azan")
+
+
+@bot_instance.hybrid_command(name='gel', description='Gel bunna yashim')
+async def gel(ctx):
+    vc = ctx.guild.voice_client
+    if vc and vc.is_connected():
+        await vc.disconnect()
+    await ctx.author.voice.channel.connect()

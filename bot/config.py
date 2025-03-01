@@ -12,6 +12,8 @@ FFMPEG_OPTIONS = {
 TOKEN = os.environ['DISCORD_TOKEN']
 PRAYER_API_URL = 'http://api.aladhan.com/v1/timingsByCity'
 AUDIO_FOLDER = 'Sounds'
+USING_OPUS = False
+OPUS_PATH = "/opt/homebrew/Cellar/opus/1.5.2/lib/libopus.dylib"
 
 PRAYERS_NAMES = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
 
