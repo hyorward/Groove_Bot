@@ -62,9 +62,21 @@ async def azan_islam(ctx):
     await play_sound(ctx, "azan")
 
 
+@bot_instance.hybrid_command(name='tabitab', description='Tab tabitab tab tabitab')
+async def play_tabitab(ctx):
+    await play_sound(ctx, "tabitab")
+
+
 @bot_instance.hybrid_command(name='gel', description='Gel bunna yashim')
 async def gel(ctx):
     vc = ctx.guild.voice_client
     if vc and vc.is_connected():
         await vc.disconnect()
     await ctx.author.voice.channel.connect()
+
+
+@bot_instance.hybrid_command(name='git', description='Siktir git')
+async def git(ctx):
+    vc = ctx.guild.voice_client
+    if vc and vc.is_connected():
+        await vc.disconnect()
