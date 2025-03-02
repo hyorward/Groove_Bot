@@ -10,7 +10,7 @@ from bot.bot import bot_instance
 from bot.config import AUDIO_FOLDER
 from bot.prayers import check_prayer_times
 
-ON_JOIN_AUDIOS = ['mephala.mp3', 'bratishka.mp3']
+ON_JOIN_AUDIOS = ['salam.mp3', 'bratishka.mp3']
 last_time_played_meow = None
 
 
