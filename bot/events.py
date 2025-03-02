@@ -93,7 +93,7 @@ async def on_voice_state_update(member, before: VoiceState, after: VoiceState):
     if member.id == bot_instance.user.id:
         return
     if (
-            all((after, before))
+            all((after.channel, before.channel))
             and (
                 all(_get_muted_members(bot_instance.user.id, after))
                 and

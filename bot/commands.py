@@ -73,6 +73,7 @@ async def gel(ctx):
     if vc and vc.is_connected():
         await vc.disconnect()
     await ctx.author.voice.channel.connect()
+    await ctx.send('Geldim!!')
 
 
 @bot_instance.hybrid_command(name='git', description='Siktir git')
@@ -80,3 +81,4 @@ async def git(ctx):
     vc = ctx.guild.voice_client
     if vc and vc.is_connected():
         await vc.disconnect()
+    await ctx.send('Ну и пойду..')
