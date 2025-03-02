@@ -115,7 +115,7 @@ async def git(ctx):
 @bot_instance.hybrid_command(name='pilay', description='Youtube url')
 async def pilay(ctx: Context, url: str):
     vc = await _get_voice_client(ctx)
-    if vc.is_playing():
+    if vc and vc.is_playing():
         await ctx.send("Дождись пока я доиграю эту шнягу")
         return
     await ctx.send("Гружу...")
