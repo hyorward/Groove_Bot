@@ -1,4 +1,6 @@
 import asyncio
+import os
+import time
 
 import discord
 from discord import app_commands
@@ -8,17 +10,43 @@ from discord.ext.commands import Context
 from bot import config
 from bot.bot import bot_instance
 from bot.utils import get_audio_path
+import yt_dlp
 
 
-async def play_sound(ctx: Context, audio_name):
+async def get_youtube_audio(url):
+    timestamp = str(int(time.time()))
+    filename = f"song_{timestamp}"
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+        'outtmpl': f"sounds/{filename}",
+        'quiet': True
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+
+    return filename
+
+
+async def _get_voice_client(ctx: Context) -> discord.VoiceClient | None:
     voice_channel = ctx.author.voice.channel
     if bot_instance.user.id not in [member.id for member in voice_channel.members]:
-        if ctx.guild.voice_client:
+        if ctx.voice_client:
             await ctx.send('Я уже в другом канале!')
             return
         vc = await voice_channel.connect()
     else:
-        vc = ctx.guild.voice_client
+        vc = ctx.voice_client
+    return vc
+
+
+async def play_sound(ctx: Context, audio_name):
+    vc = await _get_voice_client(ctx)
     audio_path = get_audio_path(audio_name)
     vc.play(discord.FFmpegPCMAudio(audio_path))
     await ctx.send('Playing..')
@@ -82,3 +110,18 @@ async def git(ctx):
     if vc and vc.is_connected():
         await vc.disconnect()
     await ctx.send('Ну и пойду..')
+
+
+@bot_instance.hybrid_command(name='pilay', description='Youtube url')
+async def pilay(ctx: Context, url: str):
+    vc = await _get_voice_client(ctx)
+    if vc.is_playing():
+        await ctx.send("Дождись пока я доиграю эту шнягу")
+        return
+    await ctx.send("Гружу...")
+    filename = await get_youtube_audio(url)
+    await ctx.send("Загрузил!")
+    await play_sound(ctx, filename)
+    audio_path = get_audio_path(filename)
+    if os.path.exists(audio_path):
+        os.remove(audio_path)
