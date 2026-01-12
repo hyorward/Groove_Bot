@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    container_name: groove_bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./sounds:/app/sounds:ro

@@ -30,3 +30,11 @@ Thumbs.db
 # Temporary files
 *.tmp
 song_*.mp3
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Systemd
+*.service

@@ -5,7 +5,9 @@ from bot import config
 
 intents = Intents.default()
 intents.message_content = True
-intents.voice_states = True  # Обработка голосовых состояний
+intents.voice_states = True
+intents.members = True  # Нужен для проверки участников канала
+intents.guilds = True
 
 bot_instance = commands.Bot(command_prefix='/', intents=intents)
 

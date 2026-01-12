@@ -1,0 +1,15 @@
+.env
+.git
+.gitignore
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.log
+.vscode/
+.idea/
+*.md
+groove_bot.service
+Dockerfile
+docker-compose.yml
+.dockerignore
