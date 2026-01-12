@@ -12,23 +12,11 @@ from bot.prayers import check_prayer_times
 
 ON_JOIN_AUDIOS = ['salambrat.mp3']
 last_time_played_meow = None
-last_time_greeted = {}  # Словарь для throttle приветствий по пользователям
 
-# Блокировка для предотвращения одновременных подключений
+# Глобальные переменные для контроля
 voice_lock = asyncio.Lock()
-# Флаг для отслеживания активного подключения
-is_connecting = False
-
-
-def can_greet(member_id: int) -> bool:
-    """Проверяет, можно ли приветствовать пользователя (не чаще раза в 10 секунд)"""
-    global last_time_greeted
-    now = time.time()
-    last_time = last_time_greeted.get(member_id, 0)
-    if now - last_time > 10:
-        last_time_greeted[member_id] = now
-        return True
-    return False
+last_greet_time = 0  # Время последнего приветствия (глобально)
+GREET_COOLDOWN = 15  # Секунд между приветствиями
 
 
 @bot_instance.event
@@ -39,90 +27,99 @@ async def on_ready():
 
 
 async def leave(member, before_voice_state: VoiceState):
+    """Выходит из канала если там остался только бот"""
     members = before_voice_state.channel.members
     if (len(members) == 1) and (members[0].id == bot_instance.user.id):
-        if member.guild.voice_client:
-            await member.guild.voice_client.disconnect()
+        vc = member.guild.voice_client
+        if vc:
+            await vc.disconnect()
 
 
-async def _get_voice_client(member, voice_channel) -> VoiceClient | None:
-    global is_connecting
+async def connect_and_play(guild, voice_channel):
+    """Подключается к каналу и воспроизводит приветствие"""
+    global last_greet_time
     
-    # Если уже идёт подключение, пропускаем
-    if is_connecting:
-        print("Подключение уже в процессе, пропускаем...")
-        return None
+    # Проверяем cooldown
+    now = time.time()
+    if now - last_greet_time < GREET_COOLDOWN:
+        print(f"Cooldown активен, осталось {GREET_COOLDOWN - (now - last_greet_time):.1f}с")
+        return
     
-    # Используем блокировку для предотвращения одновременных подключений
     async with voice_lock:
         try:
-            is_connecting = True
+            last_greet_time = time.time()
             
-            # Проверяем, может бот уже подключён
-            vc = member.guild.voice_client
-            if vc and vc.is_connected():
-                if vc.channel.id == voice_channel.id:
-                    # Уже в этом канале
-                    is_connecting = False
-                    return vc
-                # В другом канале - отключаемся
-                await vc.disconnect()
-                await asyncio.sleep(1)
+            # Проверяем текущее подключение
+            vc = guild.voice_client
             
-            # Подключаемся к каналу
-            vc = await voice_channel.connect(timeout=60.0, self_deaf=True)
-            await asyncio.sleep(2)  # Ждём стабилизации соединения
+            if vc:
+                if vc.is_connected() and vc.channel.id == voice_channel.id:
+                    # Уже в нужном канале - просто играем
+                    pass
+                else:
+                    # В другом канале или отключён - отключаемся
+                    await vc.disconnect()
+                    await asyncio.sleep(1)
+                    vc = None
             
-            is_connecting = False
-            return vc
-        except asyncio.TimeoutError:
-            print("Таймаут подключения к голосовому каналу.")
-            is_connecting = False
-            return None
+            # Подключаемся если нужно
+            if vc is None:
+                print(f"Подключаюсь к каналу {voice_channel.name}")
+                vc = await voice_channel.connect(timeout=60.0, self_deaf=True)
+                # Важно: ждём пока соединение стабилизируется
+                await asyncio.sleep(3)
+            
+            # Проверяем что подключились
+            if not vc or not vc.is_connected():
+                print("Не удалось подключиться")
+                return
+            
+            # Воспроизводим звук
+            random_audio = random.choice(ON_JOIN_AUDIOS)
+            audio_path = os.path.join(AUDIO_FOLDER, random_audio)
+            
+            if not os.path.exists(audio_path):
+                print(f"Файл не найден: {audio_path}")
+                return
+            
+            print(f"Воспроизвожу {random_audio}")
+            vc.play(discord.FFmpegPCMAudio(audio_path, executable=FFMPEG_PATH))
+            
+            # Ждём окончания воспроизведения
+            while vc.is_playing():
+                await asyncio.sleep(0.5)
+            
+            print("Воспроизведение завершено")
+            
         except Exception as e:
-            print(f"Ошибка подключения к голосовому каналу: {e}")
-            is_connecting = False
-            return None
-
-
-async def greetings(member, voice_channel):
-    voice_client = await _get_voice_client(member, voice_channel)
-    if voice_client is None:
-        return
-    
-    # Проверяем что бот всё ещё подключён
-    if not voice_client.is_connected():
-        print("Бот отключился до воспроизведения")
-        return
-    
-    random_audio = random.choice(ON_JOIN_AUDIOS)
-    audio_path = os.path.join(AUDIO_FOLDER, random_audio)
-    
-    try:
-        voice_client.play(discord.FFmpegPCMAudio(audio_path, executable=FFMPEG_PATH))
-        
-        while voice_client.is_playing():
-            await asyncio.sleep(1)
-    except Exception as e:
-        print(f"Ошибка воспроизведения: {e}")
+            print(f"Ошибка в connect_and_play: {e}")
 
 
 async def meow(member, voice_channel):
-    voice_client = await _get_voice_client(member, voice_channel)
-    if voice_client is None:
-        return
-
-    audio_path = os.path.join(AUDIO_FOLDER, "meow.mp3")
-    voice_client.play(discord.FFmpegPCMAudio(audio_path, executable=FFMPEG_PATH))
-
-    while voice_client.is_playing():
-        await asyncio.sleep(1)
+    """Воспроизводит мяу"""
+    async with voice_lock:
+        try:
+            vc = member.guild.voice_client
+            if vc is None or not vc.is_connected():
+                return
+            
+            audio_path = os.path.join(AUDIO_FOLDER, "meow.mp3")
+            if not os.path.exists(audio_path):
+                return
+                
+            vc.play(discord.FFmpegPCMAudio(audio_path, executable=FFMPEG_PATH))
+            
+            while vc.is_playing():
+                await asyncio.sleep(0.5)
+        except Exception as e:
+            print(f"Ошибка в meow: {e}")
 
 
 def _get_muted_members(bot_id, voice_state: VoiceState):
     return [
-        (member.voice.mute or member.voice.self_mute) for member in voice_state.channel.members if
-        member.id != bot_id
+        (member.voice.mute or member.voice.self_mute) 
+        for member in voice_state.channel.members 
+        if member.id != bot_id
     ]
 
 
@@ -143,33 +140,32 @@ def throttle_meow():
 
 @bot_instance.event
 async def on_voice_state_update(member, before: VoiceState, after: VoiceState):
+    # Игнорируем события от самого бота
     if member.id == bot_instance.user.id:
         return
+    
+    # Проверка на mute всех - воспроизводим мяу
     if (
-            all((after.channel, before.channel))
-            and (
-                all(_get_muted_members(bot_instance.user.id, after))
-                and
-                muted_right_now(before, after)
-            )
-            and throttle_meow()
+        all((after.channel, before.channel))
+        and all(_get_muted_members(bot_instance.user.id, after))
+        and muted_right_now(before, after)
+        and throttle_meow()
     ):
         await asyncio.sleep(5)
         await meow(member, after.channel)
         return
+    
+    # Если канал не изменился - выходим
     if before.channel == after.channel:
-        #  Далее ивенты только для входа/выхода юзера из канала
         return
-    if not after.channel and before.channel:  # если все вышли бот тоже выходит
+    
+    # Если пользователь вышел из канала
+    if not after.channel and before.channel:
         await leave(member, before)
         return
-
-    if not (
-            voice_channel := after.channel):  # Если пользователь не зашел в голосовой канал
-        return
     
-    # Throttle приветствий
-    if not can_greet(member.id):
-        return
-    
-    await greetings(member, voice_channel)
+    # Если пользователь зашёл в канал
+    if after.channel:
+        # Небольшая задержка чтобы избежать race condition
+        await asyncio.sleep(0.5)
+        await connect_and_play(member.guild, after.channel)
