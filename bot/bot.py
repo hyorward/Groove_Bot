@@ -1,4 +1,3 @@
-import aiohttp
 from discord import Intents, opus
 from discord.ext import commands
 
@@ -13,7 +12,6 @@ intents.guilds = True
 # Настройка SOCKS5 прокси для обхода блокировок Discord voice
 PROXY_URL = "socks5://127.0.0.1:10808"
 
-connector = aiohttp.TCPConnector(limit=100)
 bot_instance = commands.Bot(
     command_prefix='/',
     intents=intents,
