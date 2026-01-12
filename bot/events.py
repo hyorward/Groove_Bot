@@ -46,53 +46,53 @@ async def connect_and_play(guild, voice_channel):
         return
     
     async with voice_lock:
-        try:
-            last_greet_time = time.time()
-            
-            # Проверяем текущее подключение
-            vc = guild.voice_client
-            
-            if vc:
-                if vc.is_connected() and vc.channel.id == voice_channel.id:
-                    # Уже в нужном канале - просто играем
-                    pass
+        max_retries = 2
+        for attempt in range(1, max_retries + 1):
+            try:
+                last_greet_time = time.time()
+                # Проверяем текущее подключение
+                vc = guild.voice_client
+                if vc:
+                    if vc.is_connected() and vc.channel.id == voice_channel.id:
+                        # Уже в нужном канале - просто играем
+                        pass
+                    else:
+                        # В другом канале или отключён - отключаемся
+                        await vc.disconnect()
+                        await asyncio.sleep(1)
+                        vc = None
+                # Подключаемся если нужно
+                if vc is None:
+                    print(f"Подключаюсь к каналу {voice_channel.name}")
+                    vc = await voice_channel.connect(timeout=60.0, self_deaf=True)
+                    # Важно: ждём пока соединение стабилизируется
+                    await asyncio.sleep(3)
+                # Проверяем что подключились
+                if not vc or not vc.is_connected():
+                    print("Не удалось подключиться")
+                    return
+                # Воспроизводим звук
+                random_audio = random.choice(ON_JOIN_AUDIOS)
+                audio_path = os.path.join(AUDIO_FOLDER, random_audio)
+                if not os.path.exists(audio_path):
+                    print(f"Файл не найден: {audio_path}")
+                    return
+                print(f"Воспроизвожу {random_audio}")
+                vc.play(discord.FFmpegPCMAudio(audio_path, executable=FFMPEG_PATH))
+                # Ждём окончания воспроизведения
+                while vc.is_playing():
+                    await asyncio.sleep(0.5)
+                print("Воспроизведение завершено")
+                break
+            except Exception as e:
+                print(f"Ошибка в connect_and_play (попытка {attempt}): {type(e).__name__}: {e}")
+                import traceback
+                traceback.print_exc()
+                if attempt < max_retries:
+                    print("Повторная попытка подключения через 15 секунд...")
+                    await asyncio.sleep(15)
                 else:
-                    # В другом канале или отключён - отключаемся
-                    await vc.disconnect()
-                    await asyncio.sleep(1)
-                    vc = None
-            
-            # Подключаемся если нужно
-            if vc is None:
-                print(f"Подключаюсь к каналу {voice_channel.name}")
-                vc = await voice_channel.connect(timeout=60.0, self_deaf=True)
-                # Важно: ждём пока соединение стабилизируется
-                await asyncio.sleep(3)
-            
-            # Проверяем что подключились
-            if not vc or not vc.is_connected():
-                print("Не удалось подключиться")
-                return
-            
-            # Воспроизводим звук
-            random_audio = random.choice(ON_JOIN_AUDIOS)
-            audio_path = os.path.join(AUDIO_FOLDER, random_audio)
-            
-            if not os.path.exists(audio_path):
-                print(f"Файл не найден: {audio_path}")
-                return
-            
-            print(f"Воспроизвожу {random_audio}")
-            vc.play(discord.FFmpegPCMAudio(audio_path, executable=FFMPEG_PATH))
-            
-            # Ждём окончания воспроизведения
-            while vc.is_playing():
-                await asyncio.sleep(0.5)
-            
-            print("Воспроизведение завершено")
-            
-        except Exception as e:
-            print(f"Ошибка в connect_and_play: {e}")
+                    print("Все попытки подключения исчерпаны.")
 
 
 async def meow(member, voice_channel):
