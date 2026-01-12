@@ -12,11 +12,23 @@ from bot.prayers import check_prayer_times
 
 ON_JOIN_AUDIOS = ['salambrat.mp3']
 last_time_played_meow = None
+last_time_greeted = {}  # Словарь для throttle приветствий по пользователям
 
 # Блокировка для предотвращения одновременных подключений
 voice_lock = asyncio.Lock()
 # Флаг для отслеживания активного подключения
 is_connecting = False
+
+
+def can_greet(member_id: int) -> bool:
+    """Проверяет, можно ли приветствовать пользователя (не чаще раза в 10 секунд)"""
+    global last_time_greeted
+    now = time.time()
+    last_time = last_time_greeted.get(member_id, 0)
+    if now - last_time > 10:
+        last_time_greeted[member_id] = now
+        return True
+    return False
 
 
 @bot_instance.event
@@ -77,14 +89,22 @@ async def greetings(member, voice_channel):
     voice_client = await _get_voice_client(member, voice_channel)
     if voice_client is None:
         return
-    random_audio = random.choice(ON_JOIN_AUDIOS)  # Выбираем случайный файл
-
+    
+    # Проверяем что бот всё ещё подключён
+    if not voice_client.is_connected():
+        print("Бот отключился до воспроизведения")
+        return
+    
+    random_audio = random.choice(ON_JOIN_AUDIOS)
     audio_path = os.path.join(AUDIO_FOLDER, random_audio)
-    voice_client.play(
-        discord.FFmpegPCMAudio(audio_path, executable=FFMPEG_PATH))  # Воспроизведение случайного аудиофайла
-
-    while voice_client.is_playing():
-        await asyncio.sleep(1)
+    
+    try:
+        voice_client.play(discord.FFmpegPCMAudio(audio_path, executable=FFMPEG_PATH))
+        
+        while voice_client.is_playing():
+            await asyncio.sleep(1)
+    except Exception as e:
+        print(f"Ошибка воспроизведения: {e}")
 
 
 async def meow(member, voice_channel):
@@ -147,4 +167,9 @@ async def on_voice_state_update(member, before: VoiceState, after: VoiceState):
     if not (
             voice_channel := after.channel):  # Если пользователь не зашел в голосовой канал
         return
+    
+    # Throttle приветствий
+    if not can_greet(member.id):
+        return
+    
     await greetings(member, voice_channel)
