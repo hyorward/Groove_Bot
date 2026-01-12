@@ -8,6 +8,7 @@ from discord.app_commands import Choice
 from discord.ext.commands import Context
 
 from bot import config
+from bot.config import FFMPEG_PATH
 from bot.bot import bot_instance
 from bot.utils import get_audio_path
 import yt_dlp
@@ -38,8 +39,10 @@ async def _get_voice_client(ctx: Context) -> discord.VoiceClient | None:
     if bot_instance.user.id not in [member.id for member in voice_channel.members]:
         if ctx.voice_client:
             await ctx.send('Я уже в другом канале!')
-            return
-        vc = await voice_channel.connect()
+            return None
+        vc = await voice_channel.connect(timeout=30.0, self_deaf=True)
+        # Ждём пока подключение будет готово
+        await asyncio.sleep(1)
     else:
         vc = ctx.voice_client
     return vc
@@ -47,8 +50,14 @@ async def _get_voice_client(ctx: Context) -> discord.VoiceClient | None:
 
 async def play_sound(ctx: Context, audio_name):
     vc = await _get_voice_client(ctx)
+    if vc is None:
+        await ctx.send('Не удалось подключиться к голосовому каналу!')
+        return
+    if not vc.is_connected():
+        await ctx.send('Бот не подключён к голосовому каналу!')
+        return
     audio_path = get_audio_path(audio_name)
-    vc.play(discord.FFmpegPCMAudio(audio_path))
+    vc.play(discord.FFmpegPCMAudio(audio_path, executable=FFMPEG_PATH))
     await ctx.send('Playing..')
     while vc.is_playing():
         await asyncio.sleep(1)

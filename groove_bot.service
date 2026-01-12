@@ -1,0 +1,15 @@
+[Unit]
+Description=Groove Discord Bot
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/Groove_Bot
+ExecStart=/home/ubuntu/Groove_Bot/venv/bin/python main.py
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

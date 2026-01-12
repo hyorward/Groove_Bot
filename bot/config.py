@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from dotenv import load_dotenv
 
@@ -6,14 +7,19 @@ load_dotenv(dotenv_path='.env')
 
 VOL_OPTIONS = {'format': 'worstaudio/best', 'noplaylist': 'False', 'simulate': 'True', 'key': 'FFmpegExtractAudio'}
 FFMPEG_OPTIONS = {
-    'before_options': '-reconnect 1 - reconnect_streamed 1 - reconnect_delay_max 5', 'options': '-vn'
+    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'
 }
 
 TOKEN = os.environ['DISCORD_TOKEN']
 PRAYER_API_URL = 'http://api.aladhan.com/v1/timingsByCity'
 AUDIO_FOLDER = 'sounds'
+
+# FFmpeg - автоматически находит в системе или использует указанный путь
+FFMPEG_PATH = os.environ.get('FFMPEG_PATH') or shutil.which('ffmpeg') or 'ffmpeg'
+
+# Opus - для Linux обычно не нужен, Discord.py найдёт его автоматически
 USING_OPUS = False
-OPUS_PATH = "/opt/homebrew/Cellar/opus/1.5.2/lib/libopus.dylib"
+OPUS_PATH = os.environ.get('OPUS_PATH', '/usr/lib/x86_64-linux-gnu/libopus.so.0')
 
 PRAYERS_NAMES = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
 
