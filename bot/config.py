@@ -41,7 +41,7 @@ SOUNDPAD_1 = {
     "Avaretc...!": 32,
     "Sheep came home": 33,
     "Autumn": 35,
-    "Don't write here anymore": 36,
+    "Send him 2-3 years": 36,
     "Once you live...": 37,
     "Working!": 39,
     "What a luxury!": 40,
