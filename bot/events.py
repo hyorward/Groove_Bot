@@ -15,6 +15,8 @@ last_time_played_meow = None
 
 # Блокировка для предотвращения одновременных подключений
 voice_lock = asyncio.Lock()
+# Флаг для отслеживания активного подключения
+is_connecting = False
 
 
 @bot_instance.event
@@ -32,33 +34,42 @@ async def leave(member, before_voice_state: VoiceState):
 
 
 async def _get_voice_client(member, voice_channel) -> VoiceClient | None:
+    global is_connecting
+    
+    # Если уже идёт подключение, пропускаем
+    if is_connecting:
+        print("Подключение уже в процессе, пропускаем...")
+        return None
+    
     # Используем блокировку для предотвращения одновременных подключений
     async with voice_lock:
         try:
-            # Если бот еще не находится в новом канале
-            if bot_instance.user.id not in [user.id for user in voice_channel.members]:
-                vc = member.guild.voice_client
-                if vc and vc.is_connected():
-                    if vc.channel and len(vc.channel.members) > 1:
-                        return None
-                    await vc.disconnect()
-                    await asyncio.sleep(0.5)  # Небольшая пауза после отключения
-                vc = await voice_channel.connect(timeout=30.0, self_deaf=True)
-                await asyncio.sleep(2)  # Ждём стабилизации соединения
-            else:
-                vc = member.guild.voice_client
-                if vc is None or not vc.is_connected():
-                    # Бот в канале по списку, но соединение не готово - подождём
-                    await asyncio.sleep(3)
-                    vc = member.guild.voice_client
-                    if vc is None or not vc.is_connected():
-                        return None
+            is_connecting = True
+            
+            # Проверяем, может бот уже подключён
+            vc = member.guild.voice_client
+            if vc and vc.is_connected():
+                if vc.channel.id == voice_channel.id:
+                    # Уже в этом канале
+                    is_connecting = False
+                    return vc
+                # В другом канале - отключаемся
+                await vc.disconnect()
+                await asyncio.sleep(1)
+            
+            # Подключаемся к каналу
+            vc = await voice_channel.connect(timeout=60.0, self_deaf=True)
+            await asyncio.sleep(2)  # Ждём стабилизации соединения
+            
+            is_connecting = False
             return vc
         except asyncio.TimeoutError:
-            print("Таймаут подключения к голосовому каналу. Проверьте VPN/прокси.")
+            print("Таймаут подключения к голосовому каналу.")
+            is_connecting = False
             return None
         except Exception as e:
             print(f"Ошибка подключения к голосовому каналу: {e}")
+            is_connecting = False
             return None
 
 
