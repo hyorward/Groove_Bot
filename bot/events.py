@@ -59,14 +59,14 @@ async def connect_and_play(guild, voice_channel):
                     else:
                         # В другом канале или отключён - отключаемся
                         await vc.disconnect()
-                        await asyncio.sleep(1)
+                        await asyncio.sleep(0.3)
                         vc = None
                 # Подключаемся если нужно
                 if vc is None:
                     print(f"Подключаюсь к каналу {voice_channel.name}")
-                    vc = await voice_channel.connect(timeout=60.0, self_deaf=True)
-                    # Важно: ждём пока соединение стабилизируется
-                    await asyncio.sleep(3)
+                    vc = await voice_channel.connect(timeout=30.0, self_deaf=True)
+                    # Небольшая задержка для стабилизации
+                    await asyncio.sleep(0.5)
                 # Проверяем что подключились
                 if not vc or not vc.is_connected():
                     print("Не удалось подключиться")
@@ -166,6 +166,4 @@ async def on_voice_state_update(member, before: VoiceState, after: VoiceState):
     
     # Если пользователь зашёл в канал
     if after.channel:
-        # Небольшая задержка чтобы избежать race condition
-        await asyncio.sleep(0.5)
         await connect_and_play(member.guild, after.channel)
