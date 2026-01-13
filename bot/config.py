@@ -24,7 +24,7 @@ OPUS_PATH = os.environ.get('OPUS_PATH', '/usr/lib/x86_64-linux-gnu/libopus.so.0'
 PRAYERS_NAMES = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
 
 SOUNDPAD_1 = {
-    "Down syndrome": 15,
+    "Sparrow": 15,
     "Blin, na..": 16,
     "Bruh": 17,
     "Kazakhstan bomb": 18,

@@ -13,12 +13,31 @@ __pycache__/
 build/
 dist/
 *.egg-info/
+.eggs/
+*.egg
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Pytest / Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Mypy / Type checkers
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-project
+*.sublime-workspace
 
 # Logs
 *.log
@@ -26,15 +45,14 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Temporary files
 *.tmp
 song_*.mp3
 
-# Docker
-Dockerfile
-docker-compose.yml
-.dockerignore
+# Docker cache (local)
+.docker/
 
 # Systemd
 *.service
